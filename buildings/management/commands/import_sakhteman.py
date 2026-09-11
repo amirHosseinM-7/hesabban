@@ -33,14 +33,21 @@ UNITS = ["1", "2", "3", "4"]
 
 
 def _amount(value):
-    """Coerce an Excel cell to a positive Decimal, or None when absent."""
+    """Coerce an Excel cell (in Rials) to a positive Decimal of Tomans.
+
+    The ledger stores amounts in Tomans, so Rial figures are divided by 10
+    here. Returns None when the cell is absent or the value is not positive.
+    """
     if value is None or value == "":
         return None
     try:
-        amount = Decimal(str(value)).quantize(Decimal("1"))  # strip decimals
+        rials = Decimal(str(value)).quantize(Decimal("1"))  # strip decimals
     except (InvalidOperation, ValueError):
         return None
-    return amount if amount > 0 else None
+    if rials <= 0:
+        return None
+    # 1 Toman = 10 Rials
+    return (rials / Decimal("10")).quantize(Decimal("1"))
 
 
 def infer_category(title):

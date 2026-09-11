@@ -226,7 +226,7 @@ def test_import_sakhteman_command(db, tmp_path):
 
     # مرحله در ردیف واحد 1 ثبت شد (month label row also carries unit 1)
     u1 = b.units.get(number="1")
-    assert Charge.objects.filter(unit=u1, year=1404, month=1, total_amount=Decimal("700000")).exists()
+    assert Charge.objects.filter(unit=u1, year=1404, month=1, total_amount=Decimal("70000")).exists()  # 700000 Rials = 70000 Tomans
 
     # شارژ صفر نادیده می‌شود
     u2 = b.units.get(number="2")
