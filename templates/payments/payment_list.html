@@ -24,7 +24,9 @@
         <td data-label="تاریخ">{{ p.date|jdate }}</td>
         <td data-label="روش">{{ p.get_method_display }}</td>
         <td data-label="یادداشت">{{ p.note|default:'—' }}</td>
-        <td data-label=""><a class="btn btn-sm" href="{% url 'payment_receipt_pdf' p.pk %}" target="_blank">رسید PDF</a></td>
+        <td data-label=""><a class="btn btn-sm" href="{% url 'payment_receipt_pdf' p.pk %}" target="_blank">رسید PDF</a>
+          <button class="btn btn-sm btn-ghost" hx-get="{% url 'payment_edit' p.pk %}" hx-target="#modal-content">ویرایش</button>
+          <button class="btn btn-sm btn-danger" hx-post="{% url 'payment_void' p.pk %}" hx-confirm="این پرداخت ابطال و تخصیص‌های آن بازگردانده شود؟">ابطال</button></td>
       </tr>
       {% empty %}
       <tr><td colspan="6"><div class="empty">پرداختی ثبت نشده است.</div></td></tr>

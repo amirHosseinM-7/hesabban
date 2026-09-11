@@ -7,7 +7,8 @@ from buildings.htmx import htmx_success
 from buildings.models import Building, Unit
 from buildings.jalali import jalali_today
 from charges.services import period_label
-from payments.services import outstanding_charges, record_payment, unit_balance
+from payments.services import (outstanding_charges, record_payment, unit_balance,
+                               update_payment, void_payment)
 from .forms import PaymentForm
 from .models import Payment
 
@@ -76,3 +77,41 @@ def unit_finance(request, pk):
     })
 
 
+
+
+def payment_edit(request, pk):
+    payment = get_object_or_404(Payment.objects.select_related("unit"), pk=pk)
+    unit = payment.unit
+    form = PaymentForm(request.POST or None, initial={
+        "amount": payment.amount, "date": payment.date,
+        "method": payment.method, "note": payment.note,
+    })
+    if request.method == "POST" and form.is_valid():
+        try:
+            update_payment(
+                payment,
+                amount=form.cleaned_data["amount"],
+                when=form.cleaned_data["date"],
+                method=form.cleaned_data["method"],
+                note=form.cleaned_data["note"],
+            )
+        except Exception as exc:
+            message = getattr(exc, "messages", [str(exc)])[0]
+            return htmx_success(message)
+        return htmx_success("پرداخت ویرایش شد")
+    return render(request, "payments/payment_edit.html", {
+        "form": form,
+        "unit": unit,
+        "payment": payment,
+    })
+
+
+@require_POST
+def payment_void(request, pk):
+    payment = get_object_or_404(Payment.objects.select_related("unit"), pk=pk)
+    try:
+        void_payment(payment)
+    except Exception as exc:
+        message = getattr(exc, "messages", [str(exc)])[0]
+        return htmx_success(message)
+    return htmx_success("پرداخت ابطال شد")
