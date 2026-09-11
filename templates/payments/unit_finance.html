@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load fa_tags %}
+{% block title %} — وضعیت مالی واحد{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>واحد {{ unit.number }} — {{ unit.building.name }}</h1>
+    <p>امروز: {{ today }}</p>
+  </div>
+  <button class="btn btn-primary" hx-get="{% url 'payment_create' unit.pk %}" hx-target="#modal-content">ثبت پرداخت</button>
+</div>
+<div class="stat-grid">
+  <div class="stat glass"><div class="stat-label">جمع شارژ</div><div class="stat-value">{{ charged|toman }}</div></div>
+  <div class="stat glass"><div class="stat-label">پرداخت‌شده</div><div class="stat-value" style="color:var(--green)">{{ paid|toman }}</div></div>
+  <div class="stat glass"><div class="stat-label">مانده بدهی</div><div class="stat-value {% if outstanding > 0 %}negative{% endif %}">{{ outstanding|toman }}</div></div>
+</div>
+<div class="card glass">
+  <div class="card-title"><h2>صورتحساب‌های باز</h2></div>
+  <div class="grouped glass">
+    {% for item in outstanding_items %}
+    <div class="row">
+      <div class="row-main"><div class="row-title">شارژ {{ item.period_label_fa }}</div></div>
+      <div class="row-side"><span class="num">{{ item.remaining|toman }}</span><a class="btn btn-sm" href="{% url 'charge_invoice_pdf' item.charge.pk %}" target="_blank">فاکتور</a></div>
+    </div>
+    {% empty %}
+    <div class="empty">مانده‌ای وجود ندارد. ✅</div>
+    {% endfor %}
+  </div>
+</div>
+<div class="card glass">
+  <div class="card-title"><h2>پرداخت‌های این واحد</h2></div>
+  <div class="grouped glass">
+    {% for p in payments %}
+    <div class="row">
+      <div class="row-main"><div class="row-title">{{ p.amount|toman }}</div><div class="row-sub">{{ p.date|jdate }} · {{ p.get_method_display }}</div></div>
+      <div class="row-side"><a class="btn btn-sm" href="{% url 'payment_receipt_pdf' p.pk %}" target="_blank">رسید</a></div>
+    </div>
+    {% empty %}
+    <div class="empty">پرداختی ثبت نشده است.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

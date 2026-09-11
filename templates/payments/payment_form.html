@@ -1,0 +1,17 @@
+{% load fa_tags %}
+<h2>ثبت پرداخت — واحد {{ unit.number }}</h2>
+<p style="color:var(--ink-2); font-size:13px; margin:0 0 14px">مانده بدهی: <strong>{{ outstanding|toman }}</strong></p>
+<form hx-post="{% url 'payment_create' unit.pk %}" hx-target="#modal-content">
+  {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+  {% for f in form %}
+  <div class="field">
+    <label>{{ f.label }}</label>
+    {{ f }}
+    {% for e in f.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">ثبت پرداخت</button>
+    <button type="button" class="btn btn-ghost" data-close-modal>انصراف</button>
+  </div>
+</form>

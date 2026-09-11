@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load fa_tags %}
+{% block title %} — تعمیرات{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>درخواست‌های تعمیرات</h1><p>{{ building.name }}</p></div>
+</div>
+<div class="card glass">
+  <div class="card-title"><h2>ثبت درخواست جدید</h2></div>
+  <form hx-post="{% url 'maintenance_list' building.pk %}" hx-swap="none">
+    {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+      {% for f in form %}
+      <div class="field">
+        <label>{{ f.label }}</label>
+        {{ f }}
+        {% for e in f.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="form-actions"><button class="btn btn-primary">ثبت درخواست</button></div>
+  </form>
+</div>
+<form class="filters" method="get">
+  <select name="status">
+    <option value="">همه وضعیت‌ها</option>
+    {% for value, name in statuses %}<option value="{{ value }}" {% if value == status %}selected{% endif %}>{{ name }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-sm">اعمال</button>
+</form>
+<div class="grouped glass">
+  {% for r in requests %}
+  <div class="row">
+    {% if r.photo %}<img src="{{ r.photo.url }}" alt="" style="width:44px; height:44px; object-fit:cover; border-radius:12px;">{% endif %}
+    <div class="row-main">
+      <div class="row-title">{{ r.title }} <span class="badge badge-{{ r.status }}">{{ r.get_status_display }}</span></div>
+      <div class="row-sub">واحد {{ r.unit.number }} · {{ r.created_at|jdate }}{% if r.description %} — {{ r.description }}{% endif %}</div>
+    </div>
+    <div class="row-side">
+      <form hx-post="{% url 'maintenance_status' r.pk %}" hx-swap="none" style="display:flex; gap:6px;">
+        {% csrf_token %}
+        <select name="status">
+          {% for value, name in statuses %}<option value="{{ value }}" {% if value == r.status %}selected{% endif %}>{{ name }}</option>{% endfor %}
+        </select>
+        <button class="btn btn-sm">ثبت</button>
+      </form>
+    </div>
+  </div>
+  {% empty %}
+  <div class="empty">درخواستی ثبت نشده است.</div>
+  {% endfor %}
+</div>
+{% endblock %}

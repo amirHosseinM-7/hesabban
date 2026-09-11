@@ -1,0 +1,14 @@
+<h2>{% if resident %}ویرایش ساکن{% else %}ساکن جدید — واحد {{ unit.number }}{% endif %}</h2>
+<form hx-post="{% if resident %}{% url 'resident_edit' resident.pk %}{% else %}{% url 'resident_create' unit.pk %}{% endif %}" hx-target="#modal-content">
+  {% for f in form %}
+  <div class="field {% if f.name == 'is_active' %}checkbox-row{% endif %}">
+    {% if f.name != 'is_active' %}<label>{{ f.label }}</label>{% endif %}
+    {{ f }}{% if f.name == 'is_active' %}<label for="{{ f.id_for_label }}">{{ f.label }}</label>{% endif %}
+    {% for e in f.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">ذخیره</button>
+    <button type="button" class="btn btn-ghost" data-close-modal>انصراف</button>
+  </div>
+</form>

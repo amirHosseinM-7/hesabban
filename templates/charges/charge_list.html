@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load fa_tags %}
+{% block title %} — صورتحساب‌ها{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>صورتحساب‌ها</h1><p>{{ building.name }}</p></div>
+  <a class="btn btn-primary" href="{% url 'billing' building.pk %}">صدور دوره جدید</a>
+</div>
+<form class="filters" method="get">
+  <select name="status">
+    <option value="">همه وضعیت‌ها</option>
+    {% for value, name in statuses %}<option value="{{ value }}" {% if value == status %}selected{% endif %}>{{ name }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-sm">اعمال</button>
+</form>
+<div class="table-wrap glass" style="padding: 6px 2px">
+  <table class="table">
+    <thead><tr><th>واحد</th><th>دوره</th><th>مبلغ</th><th>پرداخت‌شده</th><th>مانده</th><th>وضعیت</th><th></th></tr></thead>
+    <tbody>
+      {% for c in charges %}
+      <tr>
+        <td data-label="واحد">واحد {{ c.unit.number }}</td>
+        <td data-label="دوره">{{ c.period_label_fa }}</td>
+        <td data-label="مبلغ" class="num">{{ c.total_amount|toman }}</td>
+        <td data-label="پرداخت‌شده" class="num">{{ c.paid|toman }}</td>
+        <td data-label="مانده" class="num">{{ c.remaining|toman }}</td>
+        <td data-label="وضعیت"><span class="badge badge-{{ c.status_display.0 }}">{{ c.status_display.1 }}</span></td>
+        <td data-label=""><a class="btn btn-sm" href="{% url 'charge_invoice_pdf' c.pk %}" target="_blank">فاکتور PDF</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7"><div class="empty">صورتحسابی ثبت نشده است.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

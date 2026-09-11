@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load fa_tags %}
+{% block title %} — هزینه‌ها{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>هزینه‌های ساختمان</h1><p>{{ building.name }}</p></div>
+  <a class="btn" href="{% url 'expenses_xlsx' building.pk %}">خروجی اکسل</a>
+</div>
+<div class="card glass">
+  <div class="card-title"><h2>ثبت هزینه جدید</h2></div>
+  <form hx-post="{% url 'expense_list' building.pk %}" hx-target="#expense-form-zone" id="expense-form-zone">
+    {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+      {% for f in form %}
+      <div class="field" {% if f.name == 'note' or f.name == 'title' %}style="grid-column: span 2;"{% endif %}>
+        <label>{{ f.label }}</label>
+        {{ f }}
+        {% for e in f.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <div class="form-actions"><button class="btn btn-primary">ثبت هزینه</button></div>
+  </form>
+</div>
+<div class="table-wrap glass" style="padding: 6px 2px">
+  <table class="table">
+    <thead><tr><th>عنوان</th><th>دسته</th><th>مبلغ</th><th>تاریخ</th><th>یادداشت</th></tr></thead>
+    <tbody>
+      {% for e in expenses %}
+      <tr>
+        <td data-label="عنوان">{{ e.title }}</td>
+        <td data-label="دسته">{{ e.get_category_display }}</td>
+        <td data-label="مبلغ" class="num">{{ e.amount|toman }}</td>
+        <td data-label="تاریخ">{{ e.date|jdate }}</td>
+        <td data-label="یادداشت">{{ e.note|default:'—' }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5"><div class="empty">هزینه‌ای ثبت نشده است.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% load fa_tags %}
+{% block title %} — واحدها و ساکنان{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>واحدها و ساکنان</h1><p>{{ building.name }}</p></div>
+  <button class="btn btn-primary" hx-get="{% url 'unit_create' building.pk %}" hx-target="#modal-content">واحد جدید</button>
+</div>
+{% for unit in units %}
+<div class="card glass">
+  <div class="card-title">
+    <h2>واحد {{ unit.number }} <small style="color:var(--ink-2); font-weight:400;">· {{ unit.area|fa }} متر{% if unit.parking_count %} · پارکینگ {{ unit.parking_count|fa }}{% endif %}{% if unit.storage_count %} · انباری {{ unit.storage_count|fa }}{% endif %}</small></h2>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-sm" hx-get="{% url 'unit_edit' unit.pk %}" hx-target="#modal-content">ویرایش</button>
+      <button class="btn btn-sm btn-primary" hx-get="{% url 'resident_create' unit.pk %}" hx-target="#modal-content">ساکن جدید</button>
+    </div>
+  </div>
+  <div class="grouped glass">
+    {% for r in unit.residents.all %}
+    <div class="row">
+      <div class="row-main">
+        <div class="row-title">{{ r.full_name }} <span class="badge {% if r.role == 'owner' %}badge-pending{% else %}badge-unpaid{% endif %}">{{ r.get_role_display }}</span></div>
+        <div class="row-sub">{{ r.phone|default:'—' }}{% if r.moved_in %} · سکونت از {{ r.moved_in|jdate }}{% endif %}{% if not r.is_active %} · غیرفعال{% endif %}</div>
+      </div>
+      <div class="row-side">
+        <button class="btn btn-sm btn-ghost" hx-get="{% url 'resident_edit' r.pk %}" hx-target="#modal-content">ویرایش</button>
+        <button class="btn btn-sm btn-ghost btn-danger" hx-post="{% url 'resident_delete' r.pk %}" hx-confirm="این ساکن حذف شود؟">حذف</button>
+      </div>
+    </div>
+    {% empty %}
+    <div class="empty">ساکنی برای این واحد ثبت نشده است.</div>
+    {% endfor %}
+  </div>
+</div>
+{% empty %}
+<div class="card glass"><div class="empty"><strong>واحدی ثبت نشده است</strong>برای شروع یک واحد اضافه کنید.</div></div>
+{% endfor %}
+{% endblock %}

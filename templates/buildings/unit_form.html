@@ -1,0 +1,14 @@
+<h2>{% if unit %}ویرایش واحد {{ unit.number }}{% else %}واحد جدید{% endif %}</h2>
+<form hx-post="{% if unit %}{% url 'unit_edit' unit.pk %}{% else %}{% url 'unit_create' building.pk %}{% endif %}" hx-target="#modal-content">
+  {% for f in form %}
+  <div class="field">
+    <label>{{ f.label }}</label>
+    {{ f }}
+    {% for e in f.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">ذخیره</button>
+    <button type="button" class="btn btn-ghost" data-close-modal>انصراف</button>
+  </div>
+</form>

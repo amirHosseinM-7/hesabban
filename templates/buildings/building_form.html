@@ -1,0 +1,15 @@
+<h2>ساختمان جدید</h2>
+<form hx-post="{% url 'building_create' %}" hx-target="#modal-content">
+  {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
+  {% for f in form %}
+  <div class="field">
+    <label>{{ f.label }}</label>
+    {{ f }}
+    {% for e in f.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">ثبت ساختمان</button>
+    <button type="button" class="btn btn-ghost" data-close-modal>انصراف</button>
+  </div>
+</form>

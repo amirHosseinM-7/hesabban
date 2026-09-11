@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load fa_tags %}
+{% block title %} — صدور صورتحساب{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>صدور صورتحساب ماهانه</h1><p>{{ building.name }}</p></div>
+</div>
+{% if error %}<div class="card glass"><div class="form-error">{{ error }}</div></div>{% endif %}
+<div class="card glass">
+  <div class="card-title"><h2>۱. انتخاب دوره</h2></div>
+  <form method="get" class="filters">
+    <select name="year">
+      {% for y in years %}<option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y|fa }}</option>{% endfor %}
+    </select>
+    <select name="month">
+      {% for value, name in months %}<option value="{{ value }}" {% if value == month %}selected{% endif %}>{{ name }}</option>{% endfor %}
+    </select>
+    <button class="btn">نمایش پیش‌نمایش</button>
+  </form>
+  {% if already %}
+  <div class="empty"><strong>این دوره قبلاً صادر شده است</strong>برای جلوگیری از صدور تکراری، امکان صدور مجدد وجود ندارد.<br><a class="btn btn-sm" href="{% url 'charge_list' building.pk %}" style="margin-top:10px">مشاهده صورتحساب‌ها</a></div>
+  {% elif units and not already %}
+  <div class="card-title" style="margin-top:18px"><h2>۲. پیش‌نمایش</h2></div>
+  <div class="table-wrap glass" style="padding: 6px 2px">
+    <table class="table">
+      <thead><tr><th>واحد</th><th>متراژ</th><th>جمع شارژ</th></tr></thead>
+      <tbody>
+        {% for u in preview %}
+        <tr>
+          <td data-label="واحد">واحد {{ u.unit.number }}</td>
+          <td data-label="متراژ">{{ u.area|fa }}</td>
+          <td data-label="جمع شارژ" class="num">{{ u.total|toman }}</td>
+        </tr>
+        {% endfor %}
+        <tr><td data-label="جمع"></td><td data-label=""></td><td data-label="جمع کل" class="num" style="font-weight:800">{{ preview_total|toman }}</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="form-actions">
+    <form method="post" hx-post="{% url 'billing_generate' building.pk %}" hx-swap="none">
+      {% csrf_token %}
+      <input type="hidden" name="year" value="{{ year }}">
+      <input type="hidden" name="month" value="{{ month }}">
+      <button class="btn btn-primary">صدور نهایی صورتحساب‌ها</button>
+    </form>
+  </div>
+  {% elif not units %}
+  <div class="empty">ابتدا واحدها را ثبت کنید.</div>
+  {% endif %}
+</div>
+{% endblock %}

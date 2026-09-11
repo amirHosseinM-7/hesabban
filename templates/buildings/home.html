@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %} — ساختمان‌ها{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>ساختمان‌ها</h1><p>ساختمان خود را انتخاب کنید یا ساختمان تازه‌ای اضافه کنید.</p></div>
+  <button class="btn btn-primary" hx-get="{% url 'building_create' %}" hx-target="#modal-content">ساختمان جدید</button>
+</div>
+{% if buildings %}
+<div class="building-grid">
+  {% for b in buildings %}
+  <a class="building-card glass" href="{% url 'building_dashboard' b.pk %}">
+    <h2>{{ b.name }}</h2>
+    <p>{{ b.address }}</p>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card glass"><div class="empty"><strong>هنوز ساختمانی ثبت نشده است</strong>برای شروع، ساختمان خود را اضافه کنید.</div></div>
+{% endif %}
+{% endblock %}

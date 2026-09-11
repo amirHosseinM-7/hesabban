@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load fa_tags %}
+{% block title %} — پرداخت‌ها{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>پرداخت‌ها</h1><p>{{ building.name }}</p></div>
+  <a class="btn" href="{% url 'payments_xlsx' building.pk %}">خروجی اکسل</a>
+</div>
+<form class="filters" method="get">
+  <select name="unit">
+    <option value="">همه واحدها</option>
+    {% for u in units %}<option value="{{ u.pk }}" {% if u.pk == unit_filter %}selected{% endif %}>واحد {{ u.number }}</option>{% endfor %}
+  </select>
+  <button class="btn btn-sm">اعمال</button>
+</form>
+<div class="table-wrap glass" style="padding: 6px 2px">
+  <table class="table">
+    <thead><tr><th>واحد</th><th>مبلغ</th><th>تاریخ</th><th>روش</th><th>یادداشت</th><th></th></tr></thead>
+    <tbody>
+      {% for p in payments %}
+      <tr>
+        <td data-label="واحد">واحد {{ p.unit.number }}</td>
+        <td data-label="مبلغ" class="num">{{ p.amount|toman }}</td>
+        <td data-label="تاریخ">{{ p.date|jdate }}</td>
+        <td data-label="روش">{{ p.get_method_display }}</td>
+        <td data-label="یادداشت">{{ p.note|default:'—' }}</td>
+        <td data-label=""><a class="btn btn-sm" href="{% url 'payment_receipt_pdf' p.pk %}" target="_blank">رسید PDF</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6"><div class="empty">پرداختی ثبت نشده است.</div></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

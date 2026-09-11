@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load fa_tags %}
+{% block title %} — قوانین شارژ{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>قوانین شارژ</h1><p>این قواعد هنگام صدور صورتحساب ماهانه اعمال می‌شوند.</p></div>
+  <button class="btn btn-primary" hx-get="{% url 'rule_create' building.pk %}" hx-target="#modal-content">قانون جدید</button>
+</div>
+<div class="card glass">
+  {% if rules %}
+  <div class="grouped glass">
+    {% for r in rules %}
+    <div class="row">
+      <div class="row-main">
+        <div class="row-title">{{ r.title }}</div>
+        <div class="row-sub">{{ r.get_kind_display }} · مبلغ پایه: {{ r.amount|toman }}</div>
+      </div>
+      <div class="row-side">
+        <button class="btn btn-sm btn-ghost" hx-get="{% url 'rule_edit' r.pk %}" hx-target="#modal-content">ویرایش</button>
+        <button class="btn btn-sm btn-ghost btn-danger" hx-post="{% url 'rule_delete' r.pk %}" hx-confirm="این قانون حذف شود؟">حذف</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty"><strong>قانونی تعریف نشده است</strong>برای صدور صورتحساب، حداقل یک قانون لازم است.</div>
+  {% endif %}
+</div>
+{% endblock %}
