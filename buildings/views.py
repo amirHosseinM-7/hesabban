@@ -17,6 +17,30 @@ from payments.services import annotate_unit_balances
 from .models import Building, Unit, Resident
 
 
+def probe(request):
+    """TEMPORARY debug aid: render a target path in an iframe and measure
+    horizontal overflow at the current viewport width."""
+    from django.http import HttpResponse
+    import html as _html
+    target = _html.escape(request.GET.get("u", "/buildings/4/"))
+    return HttpResponse(f"""<!doctype html><html lang="fa"><meta charset="utf-8">
+<body style="margin:0;background:#fff;font-family:monospace">
+<div id="out"></div>
+<iframe id="f" src="{target}" style="width:100%;height:1000px;border:0"></iframe>
+<script>
+const out=document.getElementById('out');const f=document.getElementById('f');
+function measure(){{try{{const d=f.contentDocument;const de=d.documentElement;
+const sw=de.scrollWidth,iw=de.clientWidth;
+out.textContent='path='+JSON.stringify({chr(34)}{chr(34)})+
+' viewport='+iw+' scrollWidth='+sw+' OVERFLOW_X='+(sw>iw+1);
+let bad=[];for(const el of ['.app','.topbar','.content','.tabbar','.stat-grid','.chart','.table-wrap']){{
+const e=d.querySelector(el);if(e){{const r=e.getBoundingClientRect();if(r.right>iw+1||r.left< -1)bad.push(el+' r='+Math.round(r.right));}}}}
+out.textContent+=(' wide_els='+JSON.stringify(bad));
+}}catch(e){{out.textContent+=' ERR '+e;}}}}
+f.addEventListener('load',()=>setTimeout(measure,1500));
+</script></body></html>""")
+
+
 def unit_list(request, pk):
     building = get_object_or_404(Building, pk=pk)
     units = annotate_unit_balances(building.units.all())
