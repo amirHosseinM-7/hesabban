@@ -5,3 +5,4 @@ python-bidi>=0.4
 openpyxl>=3.1
 jdatetime>=5.0
 gunicorn>=23.0
+whitenoise>=6.7
