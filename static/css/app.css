@@ -135,7 +135,7 @@ h1 { font-size: 26px; } h2 { font-size: 19px; } h3 { font-size: 16px; }
 .nav-item:hover { background: var(--glass-bg-strong); color: var(--ink); }
 .nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
 
-.content { grid-area: content; padding: 28px 30px 60px; max-width: 1200px; width: 100%; margin: 0 auto; }
+.content { grid-area: content; padding: 28px 30px 60px; max-width: 1200px; width: 100%; margin: 0 auto; min-width: 0; }
 .page-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 22px; flex-wrap: wrap; }
 .page-head p { margin: 2px 0 0; color: var(--ink-2); font-size: 13px; }
 .page-actions { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -368,9 +368,11 @@ table.table tr:last-child td { border-bottom: 0; }
   .stat { padding: 14px 16px; }
   .stat .stat-value { font-size: 21px; }
 
-  /* Monthly chart: let the 12 columns scroll horizontally instead of
-     crushing the bars, and shorten the nesting card. */
-  .chart { min-width: 540px; overflow-x: auto; }
+  /* Monthly chart: keep the 12 columns readable by scrolling the card
+     horizontally instead of crushing the bars. The card is the scroll
+     container so the whole page never overflows. */
+  .chart { min-width: 540px; }
+  .chart-card { overflow-x: auto; }
   .chart-legend { flex-wrap: wrap; }
 
   /* Filter toolbars stack as full-width rows on phones. */
