@@ -92,7 +92,7 @@ def void_payment(payment):
     statuses and remove its ledger entry, atomically."""
     from ledger.services import remove_entries
 
-    affected = Charge.objects.filter(allocations__payment=payment).distinct()
+    affected = list(Charge.objects.filter(allocations__payment=payment).distinct())
     payment.allocations.all().delete()
     remove_entries(payment)
     for charge in affected:
