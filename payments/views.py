@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 
@@ -20,11 +21,15 @@ def payment_list(request, building_pk):
                 .select_related("unit").order_by("-date", "-id"))
     if unit_filter:
         payments = payments.filter(unit_id=unit_filter)
+    paginator = Paginator(payments, 25)
+    page = paginator.get_page(request.GET.get("page"))
     return render(request, "payments/payment_list.html", {
         "building": building,
-        "payments": payments,
+        "page": page,
+        "payments": page.object_list,
         "units": building.units.all(),
         "unit_filter": unit_filter,
+        "filter_query": f"unit={unit_filter}" if unit_filter else "",
     })
 
 
@@ -97,7 +102,9 @@ def payment_edit(request, pk):
             )
         except Exception as exc:
             message = getattr(exc, "messages", [str(exc)])[0]
-            return htmx_success(message)
+            response = htmx_success(message)
+            response["HX-Refresh"] = "false"
+            return response
         return htmx_success("پرداخت ویرایش شد")
     return render(request, "payments/payment_edit.html", {
         "form": form,

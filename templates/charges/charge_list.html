@@ -4,7 +4,10 @@
 {% block content %}
 <div class="page-head">
   <div><h1>صورتحساب‌ها</h1><p>{{ building.name }}</p></div>
-  <a class="btn btn-primary" href="{% url 'billing' building.pk %}">صدور دوره جدید</a>
+  <div style="display:flex; gap:10px;">
+    <a class="btn btn-primary" href="{% url 'billing' building.pk %}">صدور دوره جدید</a>
+    <button class="btn" hx-get="{% url 'charge_create' building.pk %}" hx-target="#modal-content">شارژ دستی</button>
+  </div>
 </div>
 <form class="filters" method="get">
   <select name="status">
@@ -25,7 +28,13 @@
         <td data-label="پرداخت‌شده" class="num">{{ c.paid|toman }}</td>
         <td data-label="مانده" class="num">{{ c.remaining|toman }}</td>
         <td data-label="وضعیت"><span class="badge badge-{{ c.status_display.0 }}">{{ c.status_display.1 }}</span></td>
-        <td data-label=""><a class="btn btn-sm" href="{% url 'charge_invoice_pdf' c.pk %}" target="_blank">فاکتور PDF</a></td>
+        <td data-label="">
+          <a class="btn btn-sm" href="{% url 'charge_invoice_pdf' c.pk %}" target="_blank">فاکتور PDF</a>
+          {% if c.editable %}
+          <button class="btn btn-sm btn-ghost" hx-get="{% url 'charge_edit' c.pk %}" hx-target="#modal-content">ویرایش</button>
+          <button class="btn btn-sm btn-ghost btn-danger" hx-post="{% url 'charge_cancel' c.pk %}" hx-confirm="این شارژ ابطال شود؟">ابطال</button>
+          {% endif %}
+        </td>
       </tr>
       {% empty %}
       <tr><td colspan="7"><div class="empty">صورتحسابی ثبت نشده است.</div></td></tr>
@@ -33,4 +42,5 @@
     </tbody>
   </table>
 </div>
+{% include "partials/pagination.html" %}
 {% endblock %}

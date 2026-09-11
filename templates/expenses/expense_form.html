@@ -1,0 +1,17 @@
+{% load fa_tags %}
+<h2>{% if expense %}ویرایش هزینه{% else %}هزینه جدید{% endif %}</h2>
+<form hx-post="{% if expense %}{% url 'expense_edit' expense.pk %}{% else %}{% url 'expense_create' building.pk %}{% endif %}"
+      hx-target="#modal-content" enctype="multipart/form-data">
+  {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors.0 }}</div>{% endif %}
+  {% for f in form %}
+  <div class="field">
+    <label>{{ f.label }}</label>
+    {{ f }}
+    {% for e in f.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">ذخیره</button>
+    <button type="button" class="btn btn-ghost" data-close-modal>انصراف</button>
+  </div>
+</form>

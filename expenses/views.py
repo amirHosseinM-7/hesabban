@@ -41,6 +41,7 @@ def expense_list(request, building_pk):
         "building": building,
         "page": page,
         "expenses": page.object_list,
+        "filter_query": "",
     })
 
 

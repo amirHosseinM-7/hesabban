@@ -28,10 +28,11 @@ class Command(BaseCommand):
                                 parking_count=1 if i % 2 else 0, storage_count=0 if i % 3 else 1)
         names = ["علی رضایی", "مریم کاظمی", "حسین موسوی", "زهرا احمدی", "رضا صادقی", "نرگس مرادی",
                  "امیر جعفری", "سمانه حسینی", "بهرام نوری", "لیلا شریفی"]
-        for unit, name in zip(Unit.objects.order_by("number"), names):
+        for unit, name in zip(Unit.objects.order_by("number"), names[: max(1, len(Unit.objects.all()))]):
             Resident.objects.create(unit=unit, full_name=name, phone=f"0912{random.randint(1000000, 9999999)}")
-            if random.random() < 0.5:
-                Resident.objects.create(unit=unit, full_name=names[names.index(name) + 3], phone="")
+            if random.random() < 0.5 and len(names) > 1:
+                second = random.choice([n for n in names if n != name])
+                Resident.objects.create(unit=unit, full_name=second, phone="")
 
         ChargeRule.objects.create(building=b, kind=ChargeRule.Kind.FIXED, title="شهریه ماهانه", amount=500000)
         ChargeRule.objects.create(building=b, kind=ChargeRule.Kind.AREA, title="شارژ بر مبنای متراژ", amount=5000)
@@ -64,7 +65,15 @@ class Command(BaseCommand):
             ("تعمیر پمپ آب", 980000, today - timedelta(days=8)),
             ("قبض آب", 760000, today - timedelta(days=3)),
         ]:
-            record_expense(b, "repair" if "تعمیر" in title else "utilities", title, amount, when)
+            if "تعمیر" in title:
+                category = "repairs"
+            elif "برق" in title:
+                category = "electricity"
+            elif "آب" in title:
+                category = "water"
+            else:
+                category = "other"
+            record_expense(b, category, title, amount, when)
 
         MaintenanceRequest.objects.create(unit=units[0], title="نشت آب زیر سینک", description="...",
                                           status=MaintenanceRequest.Status.PENDING)

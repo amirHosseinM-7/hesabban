@@ -1,3 +1,4 @@
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 
@@ -13,18 +14,23 @@ def maintenance_list(request, building_pk):
     requests = MaintenanceRequest.objects.filter(unit__building=building).select_related("unit")
     if status:
         requests = requests.filter(status=status)
-    form = MaintenanceRequestForm(request.POST or None)
+    form = MaintenanceRequestForm(request.POST or None, request.FILES or None)
     form.fields["unit"].queryset = Unit.objects.filter(building=building)
     if request.method == "POST" and form.is_valid():
         obj = form.save(commit=False)
         obj.unit = form.cleaned_data["unit"]
         obj.save()
         return htmx_success("درخواست ثبت شد")
+    paginator = Paginator(requests, 25)
+    page = paginator.get_page(request.GET.get("page"))
     return render(request, "maintenance/maintenance_list.html", {
         "building": building,
-        "requests": requests,
+        "page": page,
+        "requests": page.object_list,
         "form": form,
         "status": status,
+        "statuses": MaintenanceRequest.Status.choices,
+        "filter_query": f"status={status}" if status else "",
     })
 
 

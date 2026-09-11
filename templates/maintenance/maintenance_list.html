@@ -7,7 +7,7 @@
 </div>
 <div class="card glass">
   <div class="card-title"><h2>ثبت درخواست جدید</h2></div>
-  <form hx-post="{% url 'maintenance_list' building.pk %}" hx-swap="none">
+  <form hx-post="{% url 'maintenance_list' building.pk %}" hx-swap="none" enctype="multipart/form-data">
     {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors }}</div>{% endif %}
     <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
       {% for f in form %}
@@ -50,4 +50,5 @@
   <div class="empty">درخواستی ثبت نشده است.</div>
   {% endfor %}
 </div>
+{% include "partials/pagination.html" %}
 {% endblock %}

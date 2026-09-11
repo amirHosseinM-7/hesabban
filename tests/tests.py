@@ -3,10 +3,18 @@ from decimal import Decimal
 import pytest
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.test import Client
+from django.urls import reverse
 
 from buildings.models import Building, Resident, Unit
 from charges.models import Charge, ChargeItem, ChargeRule
-from charges.services import compute_unit_items, create_manual_charge, generate_charges, update_manual_charge
+from charges.services import (
+    compute_unit_items,
+    create_manual_charge,
+    generate_charges,
+    update_manual_charge,
+)
+from expenses.models import Expense
 from expenses.services import delete_expense, record_expense, update_expense
 from ledger.models import LedgerEntry
 from ledger.services import building_summary
@@ -103,3 +111,76 @@ def test_manual_charge_flow(building):
     record_payment(unit, Decimal("180000"), "2025-01-03", Payment.Method.CASH)
     with pytest.raises(ValidationError):
         update_manual_charge(charge, title="x", amount=Decimal("1"))
+
+
+@pytest.fixture
+def client():
+    return Client()
+
+
+def test_charge_list_and_manual_charge_pages_render(building, client):
+    generate_charges(building, 1403, 1)
+    url = reverse("charge_list", args=[building.pk])
+    r = client.get(url)
+    assert r.status_code == 200
+    assert "واحد 101" in r.content.decode()
+    # manual charge modal + billing templates must exist (previously 500)
+    assert client.get(reverse("charge_create", args=[building.pk])).status_code == 200
+    c = Charge.objects.get(unit__number="101")
+    assert client.get(reverse("charge_edit", args=[c.pk])).status_code == 200
+
+
+def test_charge_edit_blocked_after_payment(building, client):
+    generate_charges(building, 1403, 3)
+    unit = building.units.get(number="101")
+    record_payment(unit, Decimal("100000"), "2025-01-01", Payment.Method.CASH)
+    c = unit.charges.first()
+    assert client.get(reverse("charge_edit", args=[c.pk])).status_code == 200
+
+
+def test_billing_preview_lists_units(building, client):
+    url = f"{reverse('billing', args=[building.pk])}?year=1404&month=1"
+    r = client.get(url)
+    assert r.status_code == 200
+    # previously used an undefined `units` variable and never showed the preview
+    assert "واحد 101" in r.content.decode()
+    assert "صدور نهایی" in r.content.decode()
+
+
+def test_expense_pages_render(building, client):
+    record_expense(building, "electricity", "قبض برق", Decimal("200000"), "2025-01-05")
+    assert client.get(reverse("expense_list", args=[building.pk])).status_code == 200
+    assert client.get(reverse("expense_create", args=[building.pk])).status_code == 200
+    e = Expense.objects.get(title="قبض برق")
+    assert client.get(reverse("expense_edit", args=[e.pk])).status_code == 200
+
+
+def test_payment_and_ledger_lists_render(building, client):
+    assert client.get(reverse("payment_list", args=[building.pk])).status_code == 200
+    assert client.get(reverse("ledger_list", args=[building.pk])).status_code == 200
+
+
+def test_maintenance_list_has_status_options(building, client):
+    r = client.get(reverse("maintenance_list", args=[building.pk]))
+    assert r.status_code == 200
+    assert "در انتظار بررسی" in r.content.decode()
+
+
+def test_list_pagination_after_25_items(building, client):
+    for i in range(30):
+        record_expense(building, "other", f"هزینه {i}", Decimal("1000"), "2025-01-01")
+    r = client.get(reverse("expense_list", args=[building.pk]))
+    assert r.status_code == 200
+    page = r.context["page"]
+    assert len(page.object_list) == 25
+    assert page.has_next()
+
+
+def test_seed_demo_command_runs(db):
+    from django.core.management import call_command
+
+    call_command("seed_demo")
+    b = Building.objects.get(name="ساختمان گلستان")
+    assert b.units.count() == 6
+    assert b.expenses.filter(category="repairs").exists()
+    assert not b.expenses.filter(category__in=["repair", "utilities"]).exists()

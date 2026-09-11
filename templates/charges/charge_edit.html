@@ -1,0 +1,20 @@
+{% load fa_tags %}
+<h2>ویرایش شارژ — واحد {{ charge.unit.number }}</h2>
+<a class="btn btn-sm" href="{% url 'charge_invoice_pdf' charge.pk %}" target="_blank">فاکتور PDF</a>
+<form hx-post="{% url 'charge_edit' charge.pk %}" hx-target="#modal-content">
+  {% if form.non_field_errors %}<div class="form-error">{{ form.non_field_errors.0 }}</div>{% endif %}
+  {% for f in form %}
+  <div class="field">
+    <label>{{ f.label }}</label>
+    {{ f }}
+    {% for e in f.errors %}<div class="field-error">{{ e }}</div>{% endfor %}
+  </div>
+  {% endfor %}
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary" {% if not editable %}disabled{% endif %}>ذخیره</button>
+    <button type="button" class="btn btn-ghost" data-close-modal>انصراف</button>
+  </div>
+  {% if not editable %}
+  <p style="color:var(--ink-2); font-size:12px; margin-top:14px">این شارژ پرداخت دارد یا ابطال شده و قابل ویرایش نیست.</p>
+  {% endif %}
+</form>

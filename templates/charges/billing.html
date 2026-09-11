@@ -19,17 +19,17 @@
   </form>
   {% if already %}
   <div class="empty"><strong>این دوره قبلاً صادر شده است</strong>برای جلوگیری از صدور تکراری، امکان صدور مجدد وجود ندارد.<br><a class="btn btn-sm" href="{% url 'charge_list' building.pk %}" style="margin-top:10px">مشاهده صورتحساب‌ها</a></div>
-  {% elif units and not already %}
+  {% elif preview and not already %}
   <div class="card-title" style="margin-top:18px"><h2>۲. پیش‌نمایش</h2></div>
   <div class="table-wrap glass" style="padding: 6px 2px">
     <table class="table">
       <thead><tr><th>واحد</th><th>متراژ</th><th>جمع شارژ</th></tr></thead>
       <tbody>
-        {% for u in preview %}
+        {% for p in preview %}
         <tr>
-          <td data-label="واحد">واحد {{ u.unit.number }}</td>
-          <td data-label="متراژ">{{ u.area|fa }}</td>
-          <td data-label="جمع شارژ" class="num">{{ u.total|toman }}</td>
+          <td data-label="واحد">واحد {{ p.unit.number }}</td>
+          <td data-label="متراژ">{{ p.area|fa }}</td>
+          <td data-label="جمع شارژ" class="num">{{ p.total|toman }}</td>
         </tr>
         {% endfor %}
         <tr><td data-label="جمع"></td><td data-label=""></td><td data-label="جمع کل" class="num" style="font-weight:800">{{ preview_total|toman }}</td></tr>
@@ -44,7 +44,7 @@
       <button class="btn btn-primary">صدور نهایی صورتحساب‌ها</button>
     </form>
   </div>
-  {% elif not units %}
+  {% elif not preview %}
   <div class="empty">ابتدا واحدها را ثبت کنید.</div>
   {% endif %}
 </div>

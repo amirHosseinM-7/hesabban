@@ -7,7 +7,7 @@ from django.views.decorators.http import require_POST
 from buildings.forms import month_choices
 from buildings.htmx import htmx_success
 from buildings.jalali import current_jalali, to_en_digits
-from buildings.models import Building, Unit
+from buildings.models import Building
 from .forms import ChargeRuleForm, ManualChargeEditForm, ManualChargeForm
 from .models import Charge, ChargeRule
 from .services import (
@@ -117,12 +117,14 @@ def charge_list(request, building_pk):
         charge.remaining = charge.total_amount - paid
         charge.status_display = badge_by_status[charge.status]
         charge.period_label_fa = period_label(charge.year, charge.month)
+        charge.editable = not charge.allocations.exists() and charge.status != Charge.Status.CANCELLED
     return render(request, "charges/charge_list.html", {
         "building": building,
         "page": page,
         "charges": page.object_list,
         "status": status,
         "statuses": Charge.Status.choices,
+        "filter_query": f"status={status}" if status else "",
     })
 
 
