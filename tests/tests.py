@@ -199,7 +199,7 @@ def _workbook(tmp_path):
         ["ماه", "واحد ", "مبلغ شارژ", "هزینه", "شرح هزینه"],
         ["انتقال از سال 1403", None, 100000, None, None],
         ["فروردین", 1, 700000, 1000000, "نظافت"],   # unit1 charge + expense on month row
-        [None, 2, 700000, None, None],
+        [None, 2, 700000, 900000, None],         # expense with blank description must still import
         [None, 3, 1000000, None, None],
         [None, 4, 700000, 278000, "برق"],
         ["اردیبهشت", 1, 1000000, None, None],
@@ -239,10 +239,12 @@ def test_import_sakhteman_command(db, tmp_path):
     assert cats["نظافت"] == "cleaning"
     assert cats["برق"] == "electricity"
     assert cats["تعمیر سرامیک"] == "repairs"
+    # هزینه بدون شرح هنوز ثبت می‌شود
+    assert cats["بدون شرح"] == "other"
 
     # اجرای دوباره باید به‌دلیل بلاک ایدم‌پتنت (ساختمان موجود است) بدون دوباره‌سازی بماند
     call_command("import_sakhteman", str(path))
     assert b.__class__.objects.filter(name="ساختمان من").count() == 1
     assert b.charges.count() == 7
     assert b.ledger_entries.filter(kind="charge").count() == 7
-    assert b.ledger_entries.filter(kind="expense").count() == 3
+    assert b.ledger_entries.filter(kind="expense").count() == 4

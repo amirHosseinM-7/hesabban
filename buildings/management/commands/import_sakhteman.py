@@ -133,11 +133,12 @@ class Command(BaseCommand):
 
             # ---- expenses (building-level, tied to the current month) ----
             expense_amt = _amount(expense_val)
-            if expense_amt is not None and description:
+            if expense_amt is not None:
+                desc = str(description).strip() if description is not None else ""
                 record_expense(
                     building,
-                    infer_category(description),
-                    str(description).strip(),
+                    infer_category(desc),
+                    desc or "بدون شرح",
                     expense_amt,
                     _gregorian(year, current_month),
                 )
