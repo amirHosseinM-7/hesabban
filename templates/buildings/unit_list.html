@@ -10,7 +10,7 @@
 <div class="card glass">
   <div class="card-title">
     <h2>واحد {{ unit.number }} <small style="color:var(--ink-2); font-weight:400;">· {{ unit.area|fa }} متر{% if unit.parking_count %} · پارکینگ {{ unit.parking_count|fa }}{% endif %}{% if unit.storage_count %} · انباری {{ unit.storage_count|fa }}{% endif %}</small></h2>
-    <div style="display:flex; gap:8px;">
+    <div class="card-actions">
       <button class="btn btn-sm" hx-get="{% url 'unit_edit' unit.pk %}" hx-target="#modal-content">ویرایش</button>
       <button class="btn btn-sm btn-primary" hx-get="{% url 'resident_create' unit.pk %}" hx-target="#modal-content">ساکن جدید</button>
     </div>

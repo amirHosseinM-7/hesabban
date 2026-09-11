@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-head">
   <div><h1>صورتحساب‌ها</h1><p>{{ building.name }}</p></div>
-  <div style="display:flex; gap:10px;">
+  <div class="page-actions">
     <a class="btn btn-primary" href="{% url 'billing' building.pk %}">صدور دوره جدید</a>
     <button class="btn" hx-get="{% url 'charge_create' building.pk %}" hx-target="#modal-content">شارژ دستی</button>
   </div>

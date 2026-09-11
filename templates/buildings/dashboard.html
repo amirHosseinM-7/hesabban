@@ -4,7 +4,7 @@
 {% block content %}
 <div class="page-head">
   <div><h1>{{ building.name }}</h1><p>صورتحساب سالانه ساختمان</p></div>
-  <div style="display:flex; gap:10px;">
+  <div class="page-actions">
     <a class="btn" href="{% url 'billing' building.pk %}">صدور صورتحساب ماهانه</a>
     <a class="btn btn-primary" href="{% url 'unit_list' building.pk %}">واحدها</a>
   </div>
