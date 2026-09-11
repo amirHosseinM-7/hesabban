@@ -3,6 +3,5 @@ __pycache__/
 *.pyc
 .DS_Store
 .pytest_cache/
-db.sqlite3
 /staticfiles/
 /media/
