@@ -184,3 +184,65 @@ def test_seed_demo_command_runs(db):
     assert b.units.count() == 6
     assert b.expenses.filter(category="repairs").exists()
     assert not b.expenses.filter(category__in=["repair", "utilities"]).exists()
+
+
+def _workbook(tmp_path):
+    """Build a small ledger mirroring the real 'ساختمان.xlsx' layout:
+    month name sits on the same row as unit 1's charge; expenses are tied to
+    the current month block."""
+    import openpyxl
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "1404"
+    rows = [
+        ["ماه", "واحد ", "مبلغ شارژ", "هزینه", "شرح هزینه"],
+        ["انتقال از سال 1403", None, 100000, None, None],
+        ["فروردین", 1, 700000, 1000000, "نظافت"],   # unit1 charge + expense on month row
+        [None, 2, 700000, None, None],
+        [None, 3, 1000000, None, None],
+        [None, 4, 700000, 278000, "برق"],
+        ["اردیبهشت", 1, 1000000, None, None],
+        [None, 2, 0, None, None],                     # zero charge must be skipped
+        [None, 3, 1000000, 1500000, "تعمیر سرامیک"],
+        [None, 4, 1000000, None, None],
+        ["جمع کل هزینه ها", None, 3400000, 2778000, None],
+    ]
+    for row in rows:
+        ws.append(row)
+    path = tmp_path / "test.xlsx"
+    wb.save(path)
+    return path
+
+
+def test_import_sakhteman_command(db, tmp_path):
+    from django.core.management import call_command
+
+    path = _workbook(tmp_path)
+    call_command("import_sakhteman", str(path))
+    b = Building.objects.get(name="ساختمان من")
+    assert [u.number for u in b.units.order_by("number")] == ["1", "2", "3", "4"]
+
+    # مرحله در ردیف واحد 1 ثبت شد (month label row also carries unit 1)
+    u1 = b.units.get(number="1")
+    assert Charge.objects.filter(unit=u1, year=1404, month=1, total_amount=Decimal("700000")).exists()
+
+    # شارژ صفر نادیده می‌شود
+    u2 = b.units.get(number="2")
+    assert Charge.objects.filter(unit=u2, year=1404, month=2).count() == 0
+
+    # 4 واحد × 2 ماه = 8 منهای شارژ صفر واحد 2 در اردیبهشت = 7 شارژ
+    assert b.charges.count() == 7
+
+    # دسته‌بندی هزینه بر مبنای شرح
+    cats = dict(b.expenses.values_list("title", "category"))
+    assert cats["نظافت"] == "cleaning"
+    assert cats["برق"] == "electricity"
+    assert cats["تعمیر سرامیک"] == "repairs"
+
+    # اجرای دوباره باید به‌دلیل بلاک ایدم‌پتنت (ساختمان موجود است) بدون دوباره‌سازی بماند
+    call_command("import_sakhteman", str(path))
+    assert b.__class__.objects.filter(name="ساختمان من").count() == 1
+    assert b.charges.count() == 7
+    assert b.ledger_entries.filter(kind="charge").count() == 7
+    assert b.ledger_entries.filter(kind="expense").count() == 3
