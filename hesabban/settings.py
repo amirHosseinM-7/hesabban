@@ -9,7 +9,8 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "hesabban-local-secret-key-not-for-production")
-DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
+# DEBUG = os.environ.get("DJANGO_DEBUG", "0") == "1"
+DEBUG = True
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "[::1]", "hesabban.onrender.com"]
 if os.environ.get("DJANGO_ALLOWED_HOSTS"):
     ALLOWED_HOSTS += [h.strip() for h in os.environ["DJANGO_ALLOWED_HOSTS"].split(",") if h.strip()]
