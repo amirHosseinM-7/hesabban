@@ -16,6 +16,7 @@ from charges.services import (
 )
 from expenses.models import Expense
 from expenses.services import delete_expense, record_expense, update_expense
+import jdatetime
 from ledger.models import LedgerEntry
 from ledger.services import building_summary
 from payments.models import Allocation, Payment
@@ -248,3 +249,36 @@ def test_import_sakhteman_command(db, tmp_path):
     assert b.charges.count() == 7
     assert b.ledger_entries.filter(kind="charge").count() == 7
     assert b.ledger_entries.filter(kind="expense").count() == 4
+
+
+def test_dashboard_year_selection(db):
+    """Each year is shown separately; previous years don't leak into the
+    selected year's figures."""
+    from django.test import Client
+    from django.urls import reverse
+
+    b = Building.objects.create(name="ساختمان سال‌ها")
+    u = Unit.objects.create(building=b, number="101", area=Decimal("50"))
+    Charge.objects.create(building=b, unit=u, year=1401, month=1, total_amount=Decimal("1000000"))
+    record_expense(b, "other", "هزینه", Decimal("300000"), jdatetime.date(1401, 1, 1).togregorian())
+    Charge.objects.create(building=b, unit=u, year=1402, month=1, total_amount=Decimal("2000000"))
+    record_expense(b, "other", "هزینه", Decimal("500000"), jdatetime.date(1402, 1, 1).togregorian())
+
+    c = Client()
+    url = reverse("building_dashboard", args=[b.pk])
+
+    # default = the latest year that has data
+    r = c.get(url)
+    assert r.context["year"] == 1402
+    assert r.context["summary"]["charge"] == Decimal("2000000")
+    assert r.context["summary"]["expense"] == Decimal("500000")
+
+    # a previous year is reachable but isolated from the others
+    r = c.get(url + "?year=1401")
+    assert r.context["year"] == 1401
+    assert r.context["summary"]["charge"] == Decimal("1000000")
+    assert r.context["summary"]["expense"] == Decimal("300000")
+    assert r.context["summary"]["expense"] != Decimal("500000")
+
+    # the year navigator lists both years, newest first
+    assert r.context["years"] == [1402, 1401]

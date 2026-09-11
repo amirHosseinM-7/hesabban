@@ -1,64 +1,79 @@
 {% extends "base.html" %}
 {% load fa_tags %}
-{% block title %} — داشبورد{% endblock %}
+{% block title %} — {{ building.name }}{% endblock %}
 {% block content %}
 <div class="page-head">
-  <div><h1>داشبورد — {{ building.name }}</h1><p>نمای کلی وضعیت مالی ساختمان</p></div>
+  <div><h1>{{ building.name }}</h1><p>صورتحساب سالانه ساختمان</p></div>
   <div style="display:flex; gap:10px;">
     <a class="btn" href="{% url 'billing' building.pk %}">صدور صورتحساب ماهانه</a>
-    <a class="btn btn-primary" href="{% url 'unit_list' building.pk %}">مدیریت واحدها</a>
+    <a class="btn btn-primary" href="{% url 'unit_list' building.pk %}">واحدها</a>
   </div>
 </div>
 
-<div class="stat-grid">
-  <div class="stat glass"><div class="stat-label">مانده صندوق</div><div class="stat-value {% if summary.fund_balance < 0 %}negative{% endif %}">{{ summary.fund_balance|toman }}</div><div class="stat-hint">درآمد منهای هزینه‌ها</div></div>
-  <div class="stat glass"><div class="stat-label">مطالبات معوق</div><div class="stat-value accent">{{ summary.receivable|toman }}</div><div class="stat-hint">شارژهای تسویه‌نشده</div></div>
-  <div class="stat glass"><div class="stat-label">جمع درآمد</div><div class="stat-value">{{ summary.total_income|toman }}</div></div>
-  <div class="stat glass"><div class="stat-label">جمع هزینه</div><div class="stat-value">{{ summary.total_expense|toman }}</div></div>
+<div class="year-nav">
+  {% if years %}
+  <span class="year-nav-label">سال:</span>
+  {% for y in years %}
+  <a class="year-pill {% if y == year %}active{% endif %}" href="?year={{ y }}">
+    {{ y|fa }}{% if y == current_year %}<span class="year-pill-tag">سال جاری</span>{% endif %}
+  </a>
+  {% endfor %}
+  {% endif %}
+</div>
+
+{% if not year %}
+<div class="card glass">
+  <div class="empty"><strong>هنوز داده‌ای ثبت نشده است</strong>برای شروع شارژ و هزینه‌ها را وارد کنید، یا داده‌ها را از فایل‌ی اکسل وارد کنید.</div>
+</div>
+{% else %}
+
+<div class="year-title">
+  <h2>گزارش سال {{ year|fa }}</h2>
+  {% if not is_current_year %}<span class="badge badge-cancelled">سال گذشته</span>{% endif %}
 </div>
 
 <div class="stat-grid">
-  <div class="stat glass"><div class="stat-label">تعداد واحدها</div><div class="stat-value">{{ units|length|fa }}</div></div>
-  <div class="stat glass"><div class="stat-label">واحدهای تسویه‌شده</div><div class="stat-value" style="color:var(--green)">{{ breakdown.paid|fa }}</div></div>
-  <div class="stat glass"><div class="stat-label">پرداخت جزئی</div><div class="stat-value" style="color:var(--orange)">{{ breakdown.partial|fa }}</div></div>
-  <div class="stat glass"><div class="stat-label">شارژهای معوق</div><div class="stat-value {% if overdue_count %}negative{% endif %}">{{ overdue_count|fa }}</div><div class="stat-hint">مبلغ معوق: {{ overdue_total|toman }}</div></div>
+  <div class="stat glass"><div class="stat-label">جمع شارژ سال</div><div class="stat-value accent">{{ summary.charge|toman }}</div><div class="stat-hint">شارژ داده‌شده بر واحدها</div></div>
+  <div class="stat glass"><div class="stat-label">جمع هزینه سال</div><div class="stat-value">{{ summary.expense|toman }}</div><div class="stat-hint">هزینه‌های ساختمان</div></div>
+  <div class="stat glass"><div class="stat-label">مانده سال</div><div class="stat-value {% if summary.balance < 0 %}negative{% endif %}">{{ summary.balance|toman }}</div><div class="stat-hint">شارژ منهای هزینه</div></div>
+  <div class="stat glass"><div class="stat-label">مطالبه باقیمانده</div><div class="stat-value">{{ summary.receivable|toman }}</div><div class="stat-hint">شارژ پرداخت‌نشده واحدها</div></div>
 </div>
 
 <div class="card glass">
-  <div class="card-title"><h2>درآمد و هزینه ۶ ماه اخیر</h2></div>
+  <div class="card-title"><h2>شارژ و هزینه ماه‌به‌ماه</h2></div>
   {% if chart %}
   <div class="chart">
     {% for point in chart %}
     <div class="chart-col">
       <div class="chart-bars">
-        <div class="chart-bar income" style="height: {{ point.income_pct }}%"></div>
+        <div class="chart-bar income" style="height: {{ point.charge_pct }}%"></div>
         <div class="chart-bar expense" style="height: {{ point.expense_pct }}%"></div>
       </div>
       <span class="chart-label">{{ point.label }}</span>
     </div>
     {% endfor %}
   </div>
-  <div class="chart-legend"><span class="lg-income">درآمد</span><span class="lg-expense">هزینه</span></div>
+  <div class="chart-legend"><span class="lg-income">شارژ</span><span class="lg-expense">هزینه</span></div>
   {% else %}
   <div class="empty">داده‌ای برای نمایش نیست.</div>
   {% endif %}
 </div>
 
 <div class="card glass">
-  <div class="card-title"><h2>وضعیت پرداخت واحدها</h2><a class="btn btn-sm" href="{% url 'unit_list' building.pk %}">همه واحدها</a></div>
+  <div class="card-title"><h2>وضعیت شارژ واحدها — سال {{ year|fa }}</h2><a class="btn btn-sm" href="{% url 'unit_list' building.pk %}">همه واحدها</a></div>
   <div class="grouped glass">
-    {% for unit in units %}
+    {% for u in units %}
     <div class="row">
       <div class="row-main">
-        <div class="row-title">واحد {{ unit.number }}</div>
-        <div class="row-sub">شارژ: {{ unit.charged|default:0|toman }} — پرداخت: {{ unit.paid|default:0|toman }}</div>
+        <div class="row-title">واحد {{ u.unit.number }}</div>
+        <div class="row-sub">شارژ: {{ u.charged|default:0|toman }} — پرداخت: {{ u.paid|default:0|toman }}</div>
       </div>
       <div class="row-side">
-        {% if unit.charged == None %}<span class="badge badge-unpaid">بدون صورتحساب</span>
-        {% elif unit.paid >= unit.charged %}<span class="badge badge-paid">تسویه‌شده</span>
-        {% elif unit.paid > 0 %}<span class="badge badge-partial">پرداخت جزئی</span>
+        {% if u.charged == 0 %}<span class="badge badge-unpaid">بدون شارژ</span>
+        {% elif u.paid >= u.charged %}<span class="badge badge-paid">تسویه‌شده</span>
+        {% elif u.paid > 0 %}<span class="badge badge-partial">پرداخت جزئی</span>
         {% else %}<span class="badge badge-unpaid">پرداخت‌نشده</span>{% endif %}
-        <a class="btn btn-sm" href="{% url 'unit_finance' unit.pk %}">پرداخت‌ها</a>
+        <a class="btn btn-sm" href="{% url 'unit_finance' u.unit.pk %}">جزئیات</a>
       </div>
     </div>
     {% empty %}
@@ -66,4 +81,5 @@
     {% endfor %}
   </div>
 </div>
+{% endif %}
 {% endblock %}

@@ -12,8 +12,6 @@ from buildings.htmx import htmx_success
 from buildings.jalali import JALALI_MONTHS
 from charges.models import Charge
 from expenses.models import Expense
-from ledger.services import building_summary
-from payments.models import Allocation
 from payments.models import Payment
 from payments.services import annotate_unit_balances
 from .models import Building, Unit, Resident
@@ -99,15 +97,106 @@ def building_create(request):
     return render(request, "buildings/building_form.html", {"form": form})
 
 
+def building_years(building):
+    """All Jalali years that have charges or expenses, newest first."""
+    years = set(
+        building.charges.exclude(status=Charge.Status.CANCELLED).values_list("year", flat=True)
+    )
+    for date in building.expenses.values_list("date", flat=True):
+        years.add(jdatetime.date.fromgregorian(date=date).year)
+    for date in Payment.objects.filter(unit__building=building).values_list("date", flat=True):
+        years.add(jdatetime.date.fromgregorian(date=date).year)
+    return sorted(years, reverse=True)
+
+
+def _jalali_year_range(year):
+    start = jdatetime.date(year, 1, 1).togregorian()
+    end = jdatetime.date(year + 1, 1, 1).togregorian()
+    return start, end
+
+
+def annual_summary(building, year):
+    """The selected Jalali year's totals, mirroring the yearly Excel figures:
+    total charge, total expense, balance (charge - expense) and the outstanding
+    receivable (charge minus payments made towards those charges)."""
+    charges = building.charges.exclude(status=Charge.Status.CANCELLED).filter(year=year)
+    charge_total = charges.aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
+    paid_total = charges.aggregate(t=Sum("allocations__amount"))["t"] or Decimal("0")
+    start, end = _jalali_year_range(year)
+    expense_total = (
+        Expense.objects.filter(building=building, date__gte=start, date__lt=end)
+        .aggregate(t=Sum("amount"))["t"] or Decimal("0")
+    )
+    income_total = (
+        Payment.objects.filter(unit__building=building, date__gte=start, date__lt=end)
+        .aggregate(t=Sum("amount"))["t"] or Decimal("0")
+    )
+    return {
+        "charge": charge_total,
+        "paid": paid_total,
+        "receivable": charge_total - paid_total,
+        "expense": expense_total,
+        "income": income_total,
+        "balance": charge_total - expense_total,
+    }
+
+
+def annual_chart(building, year):
+    """Monthly charge vs expense series for one whole Jalali year."""
+    series = []
+    for month in range(1, 13):
+        start = jdatetime.date(year, month, 1).togregorian()
+        ny, nm = (year + 1, 1) if month == 12 else (year, month + 1)
+        end = jdatetime.date(ny, nm, 1).togregorian()
+        charge = (
+            Charge.objects.filter(building=building, year=year, month=month)
+            .exclude(status=Charge.Status.CANCELLED)
+            .aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
+        )
+        expense = (
+            Expense.objects.filter(building=building, date__gte=start, date__lt=end)
+            .aggregate(t=Sum("amount"))["t"] or Decimal("0")
+        )
+        series.append({"label": JALALI_MONTHS[month - 1], "charge": charge, "expense": expense})
+    chart_max = max((max(p["charge"], p["expense"]) for p in series), default=Decimal("0"))
+    denom = chart_max or Decimal("1")
+    for point in series:
+        point["charge_pct"] = int(point["charge"] / denom * 100)
+        point["expense_pct"] = int(point["expense"] / denom * 100)
+    return series, chart_max
+
+
 def building_dashboard(request, pk):
     building = get_object_or_404(Building, pk=pk)
-    units = annotate_unit_balances(building.units.all())
-    summary = building_summary(building)
+    years = building_years(building)
+    current_year = jdatetime.date.fromgregorian(date=localdate()).year
 
+    # Default to the current Jalali year when it has data, else the latest one.
+    selected = current_year if current_year in years else (years[0] if years else None)
+    raw = request.GET.get("year")
+    if raw:
+        try:
+            value = int(raw)
+        except ValueError:
+            value = None
+        if value in years:
+            selected = value
+
+    if selected is None:
+        return render(request, "buildings/dashboard.html", {
+            "building": building, "years": years, "year": None, "summary": None,
+            "chart": [], "chart_max": Decimal("0"), "units": building.units.all(),
+            "breakdown": {"none": building.units.count()},
+            "current_year": current_year, "is_current_year": False,
+        })
+
+    units = []
     breakdown = {"paid": 0, "partial": 0, "unpaid": 0, "none": 0}
-    for unit in units:
-        charged = unit.charged or Decimal("0")
-        paid = unit.paid or Decimal("0")
+    for unit in building.units.all():
+        qs = unit.charges.exclude(status=Charge.Status.CANCELLED).filter(year=selected)
+        charged = qs.aggregate(t=Sum("total_amount"))["t"] or Decimal("0")
+        paid = qs.aggregate(t=Sum("allocations__amount"))["t"] or Decimal("0")
+        units.append({"unit": unit, "charged": charged, "paid": paid})
         if charged == 0:
             breakdown["none"] += 1
         elif paid >= charged:
@@ -117,56 +206,17 @@ def building_dashboard(request, pk):
         else:
             breakdown["unpaid"] += 1
 
-    j_today = jdatetime.date.fromgregorian(date=localdate())
-    overdue = Charge.objects.filter(
-        building=building,
-        status__in=[Charge.Status.UNPAID, Charge.Status.PARTIAL],
-    ).filter(
-        year__lt=j_today.year,
-    ) | Charge.objects.filter(
-        building=building,
-        status__in=[Charge.Status.UNPAID, Charge.Status.PARTIAL],
-        year=j_today.year,
-        month__lt=j_today.month,
-    )
-    overdue_total = sum((c.total_amount - c.paid_amount() for c in overdue), Decimal("0"))
-
-    chart, chart_max = chart_data(building)
+    summary = annual_summary(building, selected)
+    chart, chart_max = annual_chart(building, selected)
     return render(request, "buildings/dashboard.html", {
         "building": building,
-        "units": units,
+        "years": years,
+        "year": selected,
+        "current_year": current_year,
+        "is_current_year": selected == current_year,
         "summary": summary,
-        "breakdown": breakdown,
-        "overdue_count": overdue.count(),
-        "overdue_total": overdue_total,
         "chart": chart,
         "chart_max": chart_max,
+        "units": units,
+        "breakdown": breakdown,
     })
-
-
-def chart_data(building, months=6):
-    """Income vs expenses for the last N Jalali months."""
-    today = jdatetime.date.fromgregorian(date=localdate())
-    stack = []
-    y, m = today.year, today.month
-    for _ in range(months):
-        stack.append((y, m))
-        m -= 1
-        if m == 0:
-            y, m = y - 1, 12
-    series = []
-    for y, m in reversed(stack):
-        start = jdatetime.date(y, m, 1).togregorian()
-        ny, nm = (y + 1, 1) if m == 12 else (y, m + 1)
-        end = jdatetime.date(ny, nm, 1).togregorian()
-        income = Payment.objects.filter(unit__building=building, date__gte=start, date__lt=end).aggregate(
-            t=Sum("amount"))["t"] or Decimal("0")
-        expense = Expense.objects.filter(building=building, date__gte=start, date__lt=end).aggregate(
-            t=Sum("amount"))["t"] or Decimal("0")
-        series.append({"label": JALALI_MONTHS[m - 1], "income": income, "expense": expense})
-    chart_max = max((max(p["income"], p["expense"]) for p in series), default=Decimal("0"))
-    for point in series:
-        denom = chart_max or Decimal("1")
-        point["income_pct"] = int(point["income"] / denom * 100)
-        point["expense_pct"] = int(point["expense"] / denom * 100)
-    return series, chart_max

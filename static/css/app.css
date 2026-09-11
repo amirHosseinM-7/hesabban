@@ -247,6 +247,23 @@ table.table tr:last-child td { border-bottom: 0; }
 .badge-unpaid, .badge-pending { color: var(--accent); background: var(--accent-soft); border-color: rgba(10, 132, 255, 0.25); }
 .badge-cancelled, .badge-rejected { color: var(--red); background: rgba(255, 69, 58, 0.12); border-color: rgba(255, 69, 58, 0.25); }
 
+.year-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 4px; }
+.year-nav-label { font-size: 13px; color: var(--ink-2); }
+.year-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  border-radius: var(--radius-pill);
+  padding: 6px 14px;
+  font-size: 13px; font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--separator);
+  color: var(--ink-2);
+}
+.year-pill:hover { background: var(--glass-bg-strong); }
+.year-pill.active { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+.year-pill-tag { font-size: 10.5px; color: var(--ink-3); }
+.year-title { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; }
+.year-title h2 { color: var(--ink-1); }
+
 .chart { display: flex; align-items: flex-end; gap: 18px; height: 170px; padding: 8px 6px 0; }
 .chart-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; }
 .chart-bars { display: flex; align-items: flex-end; gap: 5px; flex: 1; width: 100%; justify-content: center; }
